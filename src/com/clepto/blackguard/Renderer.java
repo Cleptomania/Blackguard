@@ -11,9 +11,10 @@ import com.clepto.fsengine.GameActor;
 import com.clepto.fsengine.Window;
 import com.clepto.fsengine.graphics.Camera;
 import com.clepto.fsengine.graphics.Mesh;
-import com.clepto.fsengine.graphics.PointLight;
 import com.clepto.fsengine.graphics.ShaderProgram;
 import com.clepto.fsengine.graphics.Transformation;
+import com.clepto.fsengine.graphics.lighting.DirectionalLight;
+import com.clepto.fsengine.graphics.lighting.PointLight;
 
 public class Renderer {
 	
@@ -49,12 +50,13 @@ public class Renderer {
 		shaderProgram.createUniform("specularPower");
 		shaderProgram.createUniform("ambientLight");
 		shaderProgram.createPointLightUniform("pointLight");
+		shaderProgram.createDirectionalLightUniform("directionalLight");
 		
 		glEnable(GL_DEPTH_TEST);
 		window.setClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	
-	public void render(Window window, Camera camera, GameActor[] gameActors, Vector3f ambientLight, PointLight pointLight) {
+	public void render(Window window, Camera camera, GameActor[] gameActors, Vector3f ambientLight, PointLight pointLight, DirectionalLight directionalLight) {
 		clear();
 		
 		if (window.isResized()) {
@@ -80,6 +82,12 @@ public class Renderer {
 		lightPos.y = aux.y;
 		lightPos.z = aux.z;
 		shaderProgram.setUniform("pointLight", currPointLight);
+		
+		DirectionalLight currDirLight = new DirectionalLight(directionalLight);
+		Vector4f dir = new Vector4f(currDirLight.getDirection(), 0);
+		dir.mul(viewMatrix);
+		currDirLight.setDirection(new Vector3f(dir.x, dir.y, dir.z));
+		shaderProgram.setUniform("directionalLight", directionalLight);
 		
 		shaderProgram.setUniform("texture_sampler", 0);
 		

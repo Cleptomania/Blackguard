@@ -13,8 +13,9 @@ import com.clepto.fsengine.graphics.Camera;
 import com.clepto.fsengine.graphics.Material;
 import com.clepto.fsengine.graphics.Mesh;
 import com.clepto.fsengine.graphics.OBJLoader;
-import com.clepto.fsengine.graphics.PointLight;
 import com.clepto.fsengine.graphics.Texture;
+import com.clepto.fsengine.graphics.lighting.DirectionalLight;
+import com.clepto.fsengine.graphics.lighting.PointLight;
 
 public class Blackguard implements IGameLogic {
 	
@@ -30,6 +31,10 @@ public class Blackguard implements IGameLogic {
 	
 	private PointLight pointLight;
 	
+	private DirectionalLight directionalLight;
+	
+	private float dirLightAngle;
+	
 	private static final float CAMERA_INPUT_STEP = 0.05f;
 	
 	private static final float MOUSE_SENSITIVITY = 0.2f;
@@ -38,6 +43,7 @@ public class Blackguard implements IGameLogic {
 		renderer = new Renderer();
 		camera = new Camera();
 		cameraInp = new Vector3f(0, 0, 0);
+		dirLightAngle = -90;
 	}
 	
 	@Override
@@ -64,6 +70,10 @@ public class Blackguard implements IGameLogic {
 		PointLight.Attenuation att = new PointLight.Attenuation(0.0f, 0.0f, 1.0f);
 		pointLight.setAttenuation(att);
 		
+		lightPosition = new Vector3f(-1.0f, 0.0f, 0.0f);
+		lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
+		directionalLight = new DirectionalLight(lightColor, lightPosition, lightIntensity);
+		
 	}
 
 	@Override
@@ -89,9 +99,9 @@ public class Blackguard implements IGameLogic {
 		
 		float lightPos = pointLight.getPosition().z;
 		if (window.isKeyPressed(GLFW_KEY_Z)) {
-			this.pointLight.getPosition().z = lightPos + 0.1f;
+			this.pointLight.getPosition().z = lightPos + 0.025f;
 		} else if (window.isKeyPressed(GLFW_KEY_C)) {
-			this.pointLight.getPosition().z = lightPos - 0.1f;
+			this.pointLight.getPosition().z = lightPos - 0.025f;
 		}
 	}
 
@@ -103,11 +113,32 @@ public class Blackguard implements IGameLogic {
 			Vector2f rotVec = mouseInput.getDisplVec();
 			camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
 		}
+		
+		dirLightAngle += 1.1f;
+		if (dirLightAngle > 90) {
+			directionalLight.setIntensity(0);
+			if (dirLightAngle >= 360) {
+				dirLightAngle = -90;
+			}
+		} else if (dirLightAngle <= -80 || dirLightAngle >= 80) {
+			float factor = 1 - (float) (Math.abs(dirLightAngle) - 80) / 10.0f;
+			directionalLight.setIntensity(factor);
+			directionalLight.getColor().x = Math.max(factor, 0.9f);
+			directionalLight.getColor().z = Math.max(factor, 0.5f);
+		} else {
+			directionalLight.setIntensity(1);
+			directionalLight.getColor().x = 1;
+			directionalLight.getColor().y = 1;
+			directionalLight.getColor().z = 1;
+		}
+		double angRad = Math.toRadians(dirLightAngle);
+		directionalLight.getDirection().x = (float) Math.sin(angRad);
+		directionalLight.getDirection().y = (float) Math.cos(angRad);
 	}
 
 	@Override
 	public void render(Window window) {
-		renderer.render(window, camera, gameActors, ambientLight, pointLight);
+		renderer.render(window, camera, gameActors, ambientLight, pointLight, directionalLight);
 	}
 	
 	@Override
