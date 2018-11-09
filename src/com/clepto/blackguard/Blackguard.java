@@ -16,6 +16,7 @@ import com.clepto.fsengine.graphics.OBJLoader;
 import com.clepto.fsengine.graphics.Texture;
 import com.clepto.fsengine.graphics.lighting.DirectionalLight;
 import com.clepto.fsengine.graphics.lighting.PointLight;
+import com.clepto.fsengine.graphics.lighting.SpotLight;
 
 public class Blackguard implements IGameLogic {
 	
@@ -31,9 +32,15 @@ public class Blackguard implements IGameLogic {
 	
 	private PointLight pointLight;
 	
+	private SpotLight spotLight;
+	
 	private DirectionalLight directionalLight;
 	
 	private float dirLightAngle;
+	
+	private float spotAngle = 0;
+	
+	private float spotInc = 1;
 	
 	private static final float CAMERA_INPUT_STEP = 0.05f;
 	
@@ -69,6 +76,14 @@ public class Blackguard implements IGameLogic {
 		pointLight = new PointLight(lightColor, lightPosition, lightIntensity);
 		PointLight.Attenuation att = new PointLight.Attenuation(0.0f, 0.0f, 1.0f);
 		pointLight.setAttenuation(att);
+		
+		lightPosition = new Vector3f(0.0f, 0.0f, 10.0f);
+		pointLight = new PointLight(new Vector3f(1, 1, 1), lightPosition, lightIntensity);
+		att = new PointLight.Attenuation(0.0f, 0.0f, 0.02f);
+		pointLight.setAttenuation(att);
+		Vector3f coneDir = new Vector3f(0, 0, -1);
+		float cutoff = (float) Math.cos(Math.toRadians(140));
+		spotLight = new SpotLight(pointLight, coneDir, cutoff);
 		
 		lightPosition = new Vector3f(-1.0f, 0.0f, 0.0f);
 		lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -114,6 +129,16 @@ public class Blackguard implements IGameLogic {
 			camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
 		}
 		
+		spotAngle += spotInc * 0.05f;
+		if (spotAngle > 2) {
+			spotInc = -1;
+		} else if (spotAngle < -2) {
+			spotInc = 1;
+		}
+		double spotAngleRad = Math.toRadians(spotAngle);
+		Vector3f coneDir = spotLight.getConeDirection();
+		coneDir.y = (float) Math.sin(spotAngleRad);
+		
 		dirLightAngle += 1.1f;
 		if (dirLightAngle > 90) {
 			directionalLight.setIntensity(0);
@@ -138,7 +163,7 @@ public class Blackguard implements IGameLogic {
 
 	@Override
 	public void render(Window window) {
-		renderer.render(window, camera, gameActors, ambientLight, pointLight, directionalLight);
+		renderer.render(window, camera, gameActors, ambientLight, pointLight, spotLight, directionalLight);
 	}
 	
 	@Override

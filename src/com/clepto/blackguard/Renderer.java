@@ -15,6 +15,7 @@ import com.clepto.fsengine.graphics.ShaderProgram;
 import com.clepto.fsengine.graphics.Transformation;
 import com.clepto.fsengine.graphics.lighting.DirectionalLight;
 import com.clepto.fsengine.graphics.lighting.PointLight;
+import com.clepto.fsengine.graphics.lighting.SpotLight;
 
 public class Renderer {
 	
@@ -51,12 +52,13 @@ public class Renderer {
 		shaderProgram.createUniform("ambientLight");
 		shaderProgram.createPointLightUniform("pointLight");
 		shaderProgram.createDirectionalLightUniform("directionalLight");
+		shaderProgram.createSpotLightUniform("spotLight");
 		
 		glEnable(GL_DEPTH_TEST);
 		window.setClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	
-	public void render(Window window, Camera camera, GameActor[] gameActors, Vector3f ambientLight, PointLight pointLight, DirectionalLight directionalLight) {
+	public void render(Window window, Camera camera, GameActor[] gameActors, Vector3f ambientLight, PointLight pointLight, SpotLight spotLight, DirectionalLight directionalLight) {
 		clear();
 		
 		if (window.isResized()) {
@@ -83,8 +85,21 @@ public class Renderer {
 		lightPos.z = aux.z;
 		shaderProgram.setUniform("pointLight", currPointLight);
 		
+		SpotLight currSpotLight = new SpotLight(spotLight);
+		Vector4f dir = new Vector4f(currSpotLight.getConeDirection(), 0);
+		dir.mul(viewMatrix);
+		currSpotLight.setConeDirection(new Vector3f(dir.x, dir.y, dir.z));
+		
+		Vector3f spotLightPos = currSpotLight.getPointLight().getPosition();
+		Vector4f auxSpot = new Vector4f(spotLightPos, 1);
+		auxSpot.mul(viewMatrix);
+		spotLightPos.x = auxSpot.x;
+		spotLightPos.y = auxSpot.y;
+		spotLightPos.z = auxSpot.z;
+		shaderProgram.setUniform("spotLight", currSpotLight);
+		
 		DirectionalLight currDirLight = new DirectionalLight(directionalLight);
-		Vector4f dir = new Vector4f(currDirLight.getDirection(), 0);
+		dir = new Vector4f(currDirLight.getDirection(), 0);
 		dir.mul(viewMatrix);
 		currDirLight.setDirection(new Vector3f(dir.x, dir.y, dir.z));
 		shaderProgram.setUniform("directionalLight", directionalLight);
