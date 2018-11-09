@@ -1,6 +1,5 @@
 .settings/
 bin/
-src/
 target/
 .classpath
 .project
