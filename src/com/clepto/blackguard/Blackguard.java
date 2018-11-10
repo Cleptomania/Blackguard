@@ -5,7 +5,6 @@ import static org.lwjgl.glfw.GLFW.*;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
-import com.clepto.fsengine.GameActor;
 import com.clepto.fsengine.IGameLogic;
 import com.clepto.fsengine.MouseInput;
 import com.clepto.fsengine.Window;
@@ -13,10 +12,15 @@ import com.clepto.fsengine.graphics.Camera;
 import com.clepto.fsengine.graphics.Material;
 import com.clepto.fsengine.graphics.Mesh;
 import com.clepto.fsengine.graphics.OBJLoader;
+import com.clepto.fsengine.graphics.Renderer;
 import com.clepto.fsengine.graphics.Texture;
 import com.clepto.fsengine.graphics.lighting.DirectionalLight;
 import com.clepto.fsengine.graphics.lighting.PointLight;
 import com.clepto.fsengine.graphics.lighting.SpotLight;
+import com.clepto.fsengine.scene.Scene;
+import com.clepto.fsengine.scene.SceneLight;
+import com.clepto.fsengine.scene.actors.Actor;
+import com.clepto.fsengine.scene.actors.SkyBox;
 
 public class Blackguard implements IGameLogic {
 	
@@ -26,21 +30,9 @@ public class Blackguard implements IGameLogic {
 	
 	private final Camera camera;
 	
-	private GameActor[] gameActors;
-	
-	private Vector3f ambientLight;
-	
-	private PointLight[] pointLights;
-	
-	private SpotLight[] spotLights;
-	
-	private DirectionalLight directionalLight;
+	private Scene scene;
 	
 	private float dirLightAngle;
-	
-	private float spotAngle = 0;
-	
-	private float spotInc = 1;
 	
 	private static final float CAMERA_INPUT_STEP = 0.05f;
 	
@@ -57,40 +49,65 @@ public class Blackguard implements IGameLogic {
 	public void init(Window window) throws Exception {
 		renderer.init(window);
 		
+		scene = new Scene();		
+		
 		float reflectance = 1f;
-		Mesh mesh = OBJLoader.loadMesh("/models/cube.obj");
-		Texture texture = new Texture("/textures/grassblock.png");
+		Mesh mesh = OBJLoader.loadMesh("models/cube.obj");
+		Texture texture = new Texture("textures/grassblock.png");
 		Material material = new Material(texture, reflectance);
-		
 		mesh.setMaterial(material);
-		GameActor gameActor = new GameActor(mesh);
-		gameActor.setScale(0.5f);
-		gameActor.setPosition(0,  0, -2);
-		gameActors = new GameActor[] { gameActor };
 		
-		ambientLight = new Vector3f(0.3f, 0.3f, 0.3f);
+		float blockScale = 0.5f;
+		float skyboxScale = 10.0f;
+		float extension = 2.0f;
 		
-		Vector3f lightColor = new Vector3f(1.0f, 0.0f, 0.0f);
-		Vector3f lightPosition = new Vector3f(0.0f, 0.0f, 1.0f);
+		float startx = extension * (-skyboxScale + blockScale);
+		float startz = extension * (skyboxScale - blockScale);
+		float starty = -1.0f;
+		float inc = blockScale * 2;
+		
+		float posx = startx;
+		float posz = startz;
+		float incy = 0.0f;
+		int NUM_ROWS = (int)(extension * skyboxScale * 2 / inc);
+		int NUM_COLS = (int)(extension * skyboxScale * 2 / inc);
+		
+		Actor[] actors = new Actor[NUM_ROWS * NUM_COLS];
+		for (int i = 0; i < NUM_ROWS; i++) {
+			for (int j = 0; j < NUM_COLS; j++) {
+				Actor actor = new Actor(mesh);
+				actor.setScale(blockScale);
+				incy = Math.random() > 0.9f ? blockScale * 2 : 0f;
+				actor.setPosition(posx, starty + incy, posz);
+				actors[i*NUM_COLS + j] = actor;
+				
+				posx += inc;
+			}
+			posx = startx;
+			posz -= inc;
+		}
+		scene.setActors(actors);
+		
+		SkyBox skybox = new SkyBox("models/skybox.obj", "textures/skybox.png");
+		skybox.setScale(skyboxScale);
+		scene.setSkyBox(skybox);
+		
+		setupLights();
+		
+		camera.getPosition().y = 5;
+	}
+	
+	private void setupLights() {
+		SceneLight sceneLight = new SceneLight();
+		scene.setSceneLight(sceneLight);
+		
+		//Ambient Light
+		sceneLight.setAmbientLight(new Vector3f(0.3f, 0.3f, 0.3f));
+		
+		//Directional Light
 		float lightIntensity = 1.0f;
-		PointLight pointLight = new PointLight(lightColor, lightPosition, lightIntensity);
-		PointLight.Attenuation att = new PointLight.Attenuation(0.0f, 0.0f, 1.0f);
-		pointLight.setAttenuation(att);
-		pointLights = new PointLight[] { pointLight };
-		
-		lightPosition = new Vector3f(0.0f, 0.0f, 10.0f);
-		pointLight = new PointLight(new Vector3f(1, 1, 1), lightPosition, lightIntensity);
-		att = new PointLight.Attenuation(0.0f, 0.0f, 0.02f);
-		pointLight.setAttenuation(att);
-		Vector3f coneDir = new Vector3f(0, 0, -1);
-		float cutoff = (float) Math.cos(Math.toRadians(140));
-		SpotLight spotLight = new SpotLight(pointLight, coneDir, cutoff);
-		spotLights = new SpotLight[] { spotLight, new SpotLight(spotLight) };
-		
-		lightPosition = new Vector3f(-1.0f, 0.0f, 0.0f);
-		lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
-		directionalLight = new DirectionalLight(lightColor, lightPosition, lightIntensity);
-		
+		Vector3f lightDirection = new Vector3f(-1, 0, 0);
+		sceneLight.setDirectionalLight(new DirectionalLight(new Vector3f(1, 1, 1), lightDirection, lightIntensity));
 	}
 
 	@Override
@@ -113,13 +130,6 @@ public class Blackguard implements IGameLogic {
 		} else if (window.isKeyPressed(GLFW_KEY_E)) {
 			cameraInp.y = 1;
 		}
-		
-		float lightPos = pointLights[0].getPosition().z;
-		if (window.isKeyPressed(GLFW_KEY_Z)) {
-			this.pointLights[0].getPosition().z = lightPos + 0.025f;
-		} else if (window.isKeyPressed(GLFW_KEY_C)) {
-			this.pointLights[0].getPosition().z = lightPos - 0.025f;
-		}
 	}
 
 	@Override
@@ -130,17 +140,10 @@ public class Blackguard implements IGameLogic {
 			Vector2f rotVec = mouseInput.getDisplVec();
 			camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
 		}
+
+		SceneLight sceneLight = scene.getSceneLight();
 		
-		spotAngle += spotInc * 0.05f;
-		if (spotAngle > 2) {
-			spotInc = -1;
-		} else if (spotAngle < -2) {
-			spotInc = 1;
-		}
-		double spotAngleRad = Math.toRadians(spotAngle);
-		Vector3f coneDir = spotLights[0].getConeDirection();
-		coneDir.y = (float) Math.sin(spotAngleRad);
-		
+		DirectionalLight directionalLight = sceneLight.getDirectionalLight();
 		dirLightAngle += 1.1f;
 		if (dirLightAngle > 90) {
 			directionalLight.setIntensity(0);
@@ -165,14 +168,14 @@ public class Blackguard implements IGameLogic {
 
 	@Override
 	public void render(Window window) {
-		renderer.render(window, camera, gameActors, ambientLight, pointLights, spotLights, directionalLight);
+		renderer.render(window, camera, scene);
 	}
 	
 	@Override
 	public void cleanup() {
 		renderer.cleanup();
-		for (GameActor gameActor : gameActors) {
-			gameActor.getMesh().cleanUp();
+		for (Actor actor : scene.getActors()) {
+			actor.getMesh().cleanUp();
 		}
 	}
 	
