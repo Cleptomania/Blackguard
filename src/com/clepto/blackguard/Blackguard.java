@@ -30,9 +30,9 @@ public class Blackguard implements IGameLogic {
 	
 	private Vector3f ambientLight;
 	
-	private PointLight pointLight;
+	private PointLight[] pointLights;
 	
-	private SpotLight spotLight;
+	private SpotLight[] spotLights;
 	
 	private DirectionalLight directionalLight;
 	
@@ -73,9 +73,10 @@ public class Blackguard implements IGameLogic {
 		Vector3f lightColor = new Vector3f(1.0f, 0.0f, 0.0f);
 		Vector3f lightPosition = new Vector3f(0.0f, 0.0f, 1.0f);
 		float lightIntensity = 1.0f;
-		pointLight = new PointLight(lightColor, lightPosition, lightIntensity);
+		PointLight pointLight = new PointLight(lightColor, lightPosition, lightIntensity);
 		PointLight.Attenuation att = new PointLight.Attenuation(0.0f, 0.0f, 1.0f);
 		pointLight.setAttenuation(att);
+		pointLights = new PointLight[] { pointLight };
 		
 		lightPosition = new Vector3f(0.0f, 0.0f, 10.0f);
 		pointLight = new PointLight(new Vector3f(1, 1, 1), lightPosition, lightIntensity);
@@ -83,7 +84,8 @@ public class Blackguard implements IGameLogic {
 		pointLight.setAttenuation(att);
 		Vector3f coneDir = new Vector3f(0, 0, -1);
 		float cutoff = (float) Math.cos(Math.toRadians(140));
-		spotLight = new SpotLight(pointLight, coneDir, cutoff);
+		SpotLight spotLight = new SpotLight(pointLight, coneDir, cutoff);
+		spotLights = new SpotLight[] { spotLight, new SpotLight(spotLight) };
 		
 		lightPosition = new Vector3f(-1.0f, 0.0f, 0.0f);
 		lightColor = new Vector3f(1.0f, 1.0f, 1.0f);
@@ -112,11 +114,11 @@ public class Blackguard implements IGameLogic {
 			cameraInp.y = 1;
 		}
 		
-		float lightPos = pointLight.getPosition().z;
+		float lightPos = pointLights[0].getPosition().z;
 		if (window.isKeyPressed(GLFW_KEY_Z)) {
-			this.pointLight.getPosition().z = lightPos + 0.025f;
+			this.pointLights[0].getPosition().z = lightPos + 0.025f;
 		} else if (window.isKeyPressed(GLFW_KEY_C)) {
-			this.pointLight.getPosition().z = lightPos - 0.025f;
+			this.pointLights[0].getPosition().z = lightPos - 0.025f;
 		}
 	}
 
@@ -136,7 +138,7 @@ public class Blackguard implements IGameLogic {
 			spotInc = 1;
 		}
 		double spotAngleRad = Math.toRadians(spotAngle);
-		Vector3f coneDir = spotLight.getConeDirection();
+		Vector3f coneDir = spotLights[0].getConeDirection();
 		coneDir.y = (float) Math.sin(spotAngleRad);
 		
 		dirLightAngle += 1.1f;
@@ -163,7 +165,7 @@ public class Blackguard implements IGameLogic {
 
 	@Override
 	public void render(Window window) {
-		renderer.render(window, camera, gameActors, ambientLight, pointLight, spotLight, directionalLight);
+		renderer.render(window, camera, gameActors, ambientLight, pointLights, spotLights, directionalLight);
 	}
 	
 	@Override
