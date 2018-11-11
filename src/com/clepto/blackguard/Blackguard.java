@@ -14,13 +14,9 @@ import com.clepto.fsengine.graphics.Mesh;
 import com.clepto.fsengine.graphics.OBJLoader;
 import com.clepto.fsengine.graphics.Renderer;
 import com.clepto.fsengine.graphics.Texture;
-import com.clepto.fsengine.graphics.lighting.DirectionalLight;
-import com.clepto.fsengine.graphics.lighting.PointLight;
-import com.clepto.fsengine.graphics.lighting.SpotLight;
 import com.clepto.fsengine.scene.Scene;
 import com.clepto.fsengine.scene.SceneLight;
 import com.clepto.fsengine.scene.actors.Actor;
-import com.clepto.fsengine.scene.actors.SkyBox;
 
 public class Blackguard implements IGameLogic {
 	
@@ -32,8 +28,6 @@ public class Blackguard implements IGameLogic {
 	
 	private Scene scene;
 	
-	private float dirLightAngle;
-	
 	private static final float CAMERA_INPUT_STEP = 0.05f;
 	
 	private static final float MOUSE_SENSITIVITY = 0.2f;
@@ -42,7 +36,6 @@ public class Blackguard implements IGameLogic {
 		renderer = new Renderer();
 		camera = new Camera();
 		cameraInp = new Vector3f(0, 0, 0);
-		dirLightAngle = -90;
 	}
 	
 	@Override
@@ -88,13 +81,11 @@ public class Blackguard implements IGameLogic {
 		}
 		scene.setActors(actors);
 		
-		SkyBox skybox = new SkyBox("models/skybox.obj", "textures/skybox.png");
-		skybox.setScale(skyboxScale);
-		scene.setSkyBox(skybox);
-		
 		setupLights();
 		
 		camera.getPosition().y = 5;
+		
+		window.setClearColor(0.1f, 0.5f, 0.8f, 1.0f);
 	}
 	
 	private void setupLights() {
@@ -103,11 +94,6 @@ public class Blackguard implements IGameLogic {
 		
 		//Ambient Light
 		sceneLight.setAmbientLight(new Vector3f(0.3f, 0.3f, 0.3f));
-		
-		//Directional Light
-		float lightIntensity = 1.0f;
-		Vector3f lightDirection = new Vector3f(-1, 0, 0);
-		sceneLight.setDirectionalLight(new DirectionalLight(new Vector3f(1, 1, 1), lightDirection, lightIntensity));
 	}
 
 	@Override
@@ -140,30 +126,6 @@ public class Blackguard implements IGameLogic {
 			Vector2f rotVec = mouseInput.getDisplVec();
 			camera.moveRotation(rotVec.x * MOUSE_SENSITIVITY, rotVec.y * MOUSE_SENSITIVITY, 0);
 		}
-
-		SceneLight sceneLight = scene.getSceneLight();
-		
-		DirectionalLight directionalLight = sceneLight.getDirectionalLight();
-		dirLightAngle += 1.1f;
-		if (dirLightAngle > 90) {
-			directionalLight.setIntensity(0);
-			if (dirLightAngle >= 360) {
-				dirLightAngle = -90;
-			}
-		} else if (dirLightAngle <= -80 || dirLightAngle >= 80) {
-			float factor = 1 - (float) (Math.abs(dirLightAngle) - 80) / 10.0f;
-			directionalLight.setIntensity(factor);
-			directionalLight.getColor().x = Math.max(factor, 0.9f);
-			directionalLight.getColor().z = Math.max(factor, 0.5f);
-		} else {
-			directionalLight.setIntensity(1);
-			directionalLight.getColor().x = 1;
-			directionalLight.getColor().y = 1;
-			directionalLight.getColor().z = 1;
-		}
-		double angRad = Math.toRadians(dirLightAngle);
-		directionalLight.getDirection().x = (float) Math.sin(angRad);
-		directionalLight.getDirection().y = (float) Math.cos(angRad);
 	}
 
 	@Override
