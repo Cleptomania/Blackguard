@@ -5,7 +5,7 @@ import static org.lwjgl.glfw.GLFW.*;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
-import com.clepto.fsengine.IGameLogic;
+import com.clepto.fsengine.IApplication;
 import com.clepto.fsengine.MouseInput;
 import com.clepto.fsengine.Window;
 import com.clepto.fsengine.graphics.Camera;
@@ -18,7 +18,7 @@ import com.clepto.fsengine.scene.Scene;
 import com.clepto.fsengine.scene.SceneLight;
 import com.clepto.fsengine.scene.actors.Actor;
 
-public class Blackguard implements IGameLogic {
+public class Blackguard implements IApplication {
 	
 	private final Vector3f cameraInp;
 	
